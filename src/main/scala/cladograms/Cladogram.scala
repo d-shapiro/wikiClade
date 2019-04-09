@@ -12,17 +12,18 @@ class Cladogram (val clade: Clade, var children: Set[Cladogram]) {
     children = children ++ other.children
   }
 
-  def toDOT(name: String): String = {
+  def toDOT(name: String, omitLoops: Boolean = true): String = {
     "digraph " + name + " {\n" +
-    partialToDOT.mkString +
+    partialToDOT(omitLoops).mkString +
     "}"
   }
 
-  def partialToDOT: List[String] = {
+  def partialToDOT(omitLoops: Boolean = true): List[String] = {
     val toplevel = (for {
       child <- children
-    } yield "\"" +clade.name + "\" -> \"" + child.clade.name + "\";\n").toList
-    toplevel ++ children.flatMap(_.partialToDOT)
+      if !omitLoops || child.clade.name != clade.name
+    } yield "\"" + clade.name + "\" -> \"" + child.clade.name + "\";\n").toList
+    toplevel ++ children.flatMap(_.partialToDOT(omitLoops))
   }
 }
 
