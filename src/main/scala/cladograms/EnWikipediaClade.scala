@@ -1,8 +1,7 @@
 package cladograms
 
-import fastily.jwiki.core._
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Element
+import org.jsoup.nodes.{Document, Element}
 import org.jsoup.select.Elements
 
 import scala.util.{Failure, Success, Try}
@@ -10,10 +9,13 @@ import scala.util.{Failure, Success, Try}
 /**
   * Created by Daniel on 4/8/2019.
   */
-case class EnWikipediaClade(val name: String, val path: Option[String]) extends Clade{
+case class EnWikipediaClade(val name: String, val path: Option[String], val priority: Double = 0) extends Clade {
   val baseUrl = "https://en.wikipedia.org"
 
   lazy val ancestors = constructAncestry
+
+  override def shouldDisplay(verbosity: Int) = priority <= verbosity
+
 
   private def constructAncestry: List[Clade] = {
     val taxonomy = extractTaxonomy(getInfoTable) match {
@@ -21,10 +23,10 @@ case class EnWikipediaClade(val name: String, val path: Option[String]) extends 
       case head :: tail => tail
     }
     for {
-      (taxName, taxPath) <- taxonomy
+      (taxName, taxPath, priority) <- taxonomy
     } yield {
-      if (taxPath.isEmpty) new EnWikipediaClade(taxName, None)
-      else new EnWikipediaClade(taxName, Some(taxPath))
+      if (taxPath.isEmpty) new EnWikipediaClade(taxName, None, priority)
+      else new EnWikipediaClade(taxName, Some(taxPath), priority)
     }
   }
 
@@ -41,7 +43,7 @@ case class EnWikipediaClade(val name: String, val path: Option[String]) extends 
     case None => new Elements()
   }
 
-  private def extractTaxonomy(elems: Elements): List[(String, String)] = {
+  private def extractTaxonomy(elems: Elements): List[(String, String, Double)] = {
     def parseRow(row: Element): (String, String) = {
       val tds = row.select("td")
       if (tds.isEmpty) ("", "")
@@ -55,7 +57,8 @@ case class EnWikipediaClade(val name: String, val path: Option[String]) extends 
         (text, ref)
       }
     }
-    def iter(i: Int, started: Boolean, knownPages: Set[String], taxList: List[(String, String)]): List[(String, String)] = {
+    def iter(i: Int, started: Boolean, knownPages: Set[String], taxList: List[(String, String, Double)]):
+    List[(String, String, Double)] = {
       if (i >= elems.size()) {
         taxList
       } else {
@@ -73,17 +76,22 @@ case class EnWikipediaClade(val name: String, val path: Option[String]) extends 
           } else {
             val (name, path) = parseRow(row)
             if (path.nonEmpty) {
-              val pagetry = Try(Jsoup.connect(baseUrl + path).get().select("title").text())
+              val doctry = Try(Jsoup.connect(baseUrl + path).get())
+              val pagetry = doctry match {
+                case Success(doc) => Try(doc.select("title").text())
+                case Failure(e) => Failure(e)
+              }
               pagetry match {
                 case Success(page) => if (knownPages contains page) {
-                  iter(i + 1, started, knownPages, (name, "") :: taxList)
+                  iter(i + 1, started, knownPages, (name, "", 99.0) :: taxList)
                 } else {
-                  iter(i + 1, started, knownPages + page, (name, path) :: taxList)
+                  val pri = priorityBasedOnDoc(doctry.get)
+                  iter(i + 1, started, knownPages + page, (name, path, pri) :: taxList)
                 }
-                case Failure(_) => iter(i + 1, started, knownPages, (name, "") :: taxList)
+                case Failure(_) => iter(i + 1, started, knownPages, (name, "", 99.0) :: taxList)
               }
             } else {
-              iter(i + 1, started, knownPages, (name, path) :: taxList)
+              iter(i + 1, started, knownPages, (name, path, 99.0) :: taxList)
             }
           }
         }
@@ -91,5 +99,9 @@ case class EnWikipediaClade(val name: String, val path: Option[String]) extends 
     }
     iter(0, false, Set(), List())
   }
+
+  def priorityBasedOnDoc(doc: Document): Double =
+    Math.min(99, Math.max(1, 100 - (15 * (Math.log(doc.text().length) - 7))))
+
 
 }

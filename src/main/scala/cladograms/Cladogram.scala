@@ -12,19 +12,28 @@ class Cladogram (val clade: Clade, var children: Set[Cladogram]) {
     children = children ++ other.children
   }
 
-  def toDOT(name: String, omitLoops: Boolean = true): String = {
+  def toDOT(name: String, omitLoops: Boolean = true, verbosity: Int = 100): String = {
     "digraph " + name + " {\n" +
-    partialToDOT(omitLoops).mkString +
+    partialToDOT(omitLoops, Math.min(Math.max(0, verbosity), 100)).mkString +
     "}"
   }
 
-  def partialToDOT(omitLoops: Boolean = true): List[String] = {
+  def partialToDOT(omitLoops: Boolean = true, verbosity: Int = 100): List[String] = {
+    val descendants = prominentDescendants(verbosity)
     val toplevel = (for {
-      child <- children
+      child <- descendants
       if !omitLoops || child.clade.name != clade.name
     } yield "\"" + clade.name + "\" -> \"" + child.clade.name + "\";\n").toList
-    toplevel ++ children.flatMap(_.partialToDOT(omitLoops))
+    toplevel ++ descendants.flatMap(_.partialToDOT(omitLoops, verbosity))
   }
+
+  def prominentDescendants(verbosity: Int): Set[Cladogram] = for {
+    child <- children
+    descendant =
+      if (child.children.size == 1 && !child.children.head.clade.shouldDisplay(verbosity))
+        child.prominentDescendants(verbosity).head        //guaranteed to have exactly one element
+      else child
+  } yield descendant
 }
 
 object Cladogram {
