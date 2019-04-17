@@ -7,5 +7,4 @@ trait Clade {
   val name: String
   def ancestors: List[Clade]
   def shouldDisplay(verbosity: Int): Boolean = true
-
-
+}
