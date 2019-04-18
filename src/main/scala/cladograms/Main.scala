@@ -2,8 +2,10 @@ package cladograms
 
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.io.File
 
-import org.jsoup.Jsoup
+import guru.nidi.graphviz.engine._
+import guru.nidi.graphviz.engine.GraphvizServer
 
 import scala.util.{Failure, Success, Try}
 
@@ -13,7 +15,7 @@ import scala.util.{Failure, Success, Try}
 object Main extends App {
 
   def getLeafClade(name: String): Clade = {
-    new EnWikipediaClade(name, Some("/wiki/" + name.replaceAll(" ", "_")))
+    EnWikipediaClade(name, Some("/wiki/" + name.replaceAll(" ", "_")))
   }
 
   def dotToGraphVizUrl(dot: String): String = {
@@ -21,7 +23,7 @@ object Main extends App {
       URLEncoder.encode(dot, StandardCharsets.UTF_8.toString).replaceAll("\\+", " ")
   }
 
-  val params = Set("-v")
+  val params = Set("-v", "-o")
   val flags = Set()
 
   def parseArgs: (List[String], Map[String, String]) = {
@@ -44,12 +46,24 @@ object Main extends App {
 
   val verbosity = configs.get("-v")
 
-  val dots = verbosity match {
-    case None => cladSet map (cladogram => cladogram.toDOT(cladogram.clade.name))
+  val dots: Set[(String, String)] = verbosity match {
+    case None => cladSet map (cladogram => cladogram.clade.name -> cladogram.toDOT(cladogram.clade.name))
     case Some(s) => Try(s.toInt) match {
-      case Success(v) => cladSet map (cladogram => cladogram.toDOT(cladogram.clade.name, verbosity = v))
+      case Success(v) => cladSet map (cladogram => cladogram.clade.name -> cladogram.toDOT(cladogram.clade.name, verbosity = v))
       case Failure(e) => throw new IllegalArgumentException("Verbosity must be an integer (0-100)")
     }
   }
-  dots.foreach (dot => println(dot + "\n" + dotToGraphVizUrl(dot) + "\n"))
+
+  val outFolder = configs.get("-o") match {
+    case None => "out"
+    case Some(s) => s
+  }
+
+  dots.foreach {
+    case (name, dot) =>
+      println(dot + "\n")
+      Graphviz.fromString(dot).render(Format.PNG).toFile(new File(s"$outFolder/$name.png"))
+  }
+
+  
 }
