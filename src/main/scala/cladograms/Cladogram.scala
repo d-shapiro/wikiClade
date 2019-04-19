@@ -82,5 +82,11 @@ object Cladogram {
     iter(leaves, Map(), Set())
   }
 
-
+  def toDOT(cladograms: Set[Cladogram], name: String, omitLoops: Boolean = true, verbosity: Int = 100): String = {
+    cladograms.foldLeft("digraph " + name + " {\n"){
+      _ +
+      "subgraph " + name + " {\n" +
+      _.partialToDOT(omitLoops, Math.min(Math.max(0, verbosity), 100)).mkString +
+      "}\n"} + "}"
+  }
 }

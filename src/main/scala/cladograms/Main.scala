@@ -4,6 +4,7 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.io.File
 
+import com.sun.org.apache.xml.internal.serialize.OutputFormat
 import guru.nidi.graphviz.engine._
 import guru.nidi.graphviz.engine.GraphvizServer
 
@@ -23,7 +24,7 @@ object Main extends App {
       URLEncoder.encode(dot, StandardCharsets.UTF_8.toString).replaceAll("\\+", " ")
   }
 
-  val params = Set("-v", "-o")
+  val params = Set("-v", "-o", "-f")
   val flags = Set()
 
   def parseArgs: (List[String], Map[String, String]) = {
@@ -46,24 +47,36 @@ object Main extends App {
 
   val verbosity = configs.get("-v")
 
-  val dots: Set[(String, String)] = verbosity match {
-    case None => cladSet map (cladogram => cladogram.clade.name -> cladogram.toDOT(cladogram.clade.name))
+  val dot: String = verbosity match {
+    case None => Cladogram.toDOT(cladSet, "Cladogram")
     case Some(s) => Try(s.toInt) match {
-      case Success(v) => cladSet map (cladogram => cladogram.clade.name -> cladogram.toDOT(cladogram.clade.name, verbosity = v))
-      case Failure(e) => throw new IllegalArgumentException("Verbosity must be an integer (0-100)")
+      case Success(v) => Cladogram.toDOT(cladSet, "Cladogram", verbosity = v)
+      case Failure(_) => throw new IllegalArgumentException("Verbosity must be an integer (0-100)")
     }
   }
 
-  val outFolder = configs.get("-o") match {
-    case None => "out"
-    case Some(s) => s
+  object OutFormat {
+    sealed abstract class OutFormat(val gvFormat: Format, val fileExtension: String)
+    case object PNG extends OutFormat(Format.PNG, ".png")
+    case object SVG extends OutFormat(Format.SVG, ".svg")
+    case object DOT extends OutFormat(Format.XDOT, "")
+    def fromString(s: String): Option[OutFormat] = {
+      Vector(PNG, SVG, DOT).find(_.toString == s)
+    }
   }
 
-  dots.foreach {
-    case (name, dot) =>
-      println(dot + "\n")
-      Graphviz.fromString(dot).render(Format.PNG).toFile(new File(s"$outFolder/$name.png"))
+  val format = configs.get("-f") match {
+    case None => OutFormat.DOT
+    case Some(s) => OutFormat.fromString(s.toUpperCase) match {
+      case Some(f) => f
+      case None => OutFormat.DOT
+    }
   }
 
-  
+  val outFile = configs.get("-o") match {
+    case None => "out" + format.fileExtension
+    case Some(s) => if (s.endsWith(format.fileExtension)) s else s + format.fileExtension
+  }
+
+  Graphviz.fromString(dot).render(format.gvFormat).toFile(new File(s"$outFile"))
 }
