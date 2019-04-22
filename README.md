@@ -23,4 +23,4 @@ Inputs should be any number of organisms (or clades of organisms) that can be fo
 
 `run -v 50 -f png -o animals.png Cat Dog Pigeon`
 
-`sbt "run -v 0 -f svg -o plants.png "Euphorbia milii" "Nepenthes sanguinea" "Dracaena marginata" "Araucaria heterophylla" "Pachira aquatica" "Kalanchoe blossfeldiana" "Calathea rufibarba" "Zantedeschia aethiopica"`
+`run -v 0 -f svg -o plants.png "Euphorbia milii" "Nepenthes sanguinea" "Dracaena marginata" "Araucaria heterophylla" "Pachira aquatica" "Kalanchoe blossfeldiana" "Calathea rufibarba" "Zantedeschia aethiopica"`
