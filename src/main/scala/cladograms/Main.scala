@@ -4,16 +4,24 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.io.File
 
-import com.sun.org.apache.xml.internal.serialize.OutputFormat
+import cladograms.Main.OutFormat.OutFormat
 import guru.nidi.graphviz.engine._
-import guru.nidi.graphviz.engine.GraphvizServer
-
 import scala.util.{Failure, Success, Try}
 
 /**
   * Created by Daniel on 4/8/2019.
   */
 object Main extends App {
+
+  object OutFormat {
+    sealed abstract class OutFormat(val gvFormat: Format, val fileExtension: String)
+    case object PNG extends OutFormat(Format.PNG, ".png")
+    case object SVG extends OutFormat(Format.SVG, ".svg")
+    case object DOT extends OutFormat(Format.XDOT, "")
+    def fromString(s: String): Option[OutFormat] = {
+      Vector(PNG, SVG, DOT).find(_.toString == s)
+    }
+  }
 
   def getLeafClade(name: String): Clade = {
     EnWikipediaClade(name, Some("/wiki/" + name.replaceAll(" ", "_")))
@@ -23,9 +31,6 @@ object Main extends App {
     "https://dreampuf.github.io/GraphvizOnline/#" +
       URLEncoder.encode(dot, StandardCharsets.UTF_8.toString).replaceAll("\\+", " ")
   }
-
-  val params = Set("-v", "-o", "-f")
-  val flags = Set()
 
   def parseArgs: (List[String], Map[String, String]) = {
     def iter(args: List[String], param: Option[String], inputs: List[String], configs: Map[String, String]):
@@ -41,28 +46,29 @@ object Main extends App {
     iter(args.toList, None, List(), Map())
   }
 
-  val (inputs, configs) = parseArgs
-  val leaves = inputs.reverse map getLeafClade
-  val cladSet = Cladogram.construct(leaves)
+  def renderer(inputs: List[String], verbosity: Option[Int], format: OutFormat): Renderer = {
+    val leaves = inputs.reverse map getLeafClade
+    val cladSet = Cladogram.construct(leaves)
 
-  val verbosity = configs.get("-v")
-
-  val dot: String = verbosity match {
-    case None => Cladogram.toDOT(cladSet, "Cladogram")
-    case Some(s) => Try(s.toInt) match {
-      case Success(v) => Cladogram.toDOT(cladSet, "Cladogram", verbosity = v)
-      case Failure(_) => throw new IllegalArgumentException("Verbosity must be an integer (0-100)")
+    val dot: String = verbosity match {
+      case None => Cladogram.toDOT(cladSet, "Cladogram")
+      case Some(v) => Cladogram.toDOT(cladSet, "Cladogram", verbosity = v)
     }
+
+    Graphviz.fromString(dot).render(format.gvFormat)
   }
 
-  object OutFormat {
-    sealed abstract class OutFormat(val gvFormat: Format, val fileExtension: String)
-    case object PNG extends OutFormat(Format.PNG, ".png")
-    case object SVG extends OutFormat(Format.SVG, ".svg")
-    case object DOT extends OutFormat(Format.XDOT, "")
-    def fromString(s: String): Option[OutFormat] = {
-      Vector(PNG, SVG, DOT).find(_.toString == s)
-    }
+  def svg(inputs: List[String], verbosity: Option[Int]): String = {
+    renderer(inputs, verbosity, OutFormat.SVG).toString
+  }
+
+  val params = Set("-v", "-o", "-f")
+  val flags = Set()
+
+  val (inputs, configs) = parseArgs
+  val verbosity = configs.get("-v") match {
+    case None => None
+    case Some(s) => Try(s.toInt).toOption
   }
 
   val format = configs.get("-f") match {
@@ -78,5 +84,5 @@ object Main extends App {
     case Some(s) => if (s.endsWith(format.fileExtension)) s else s + format.fileExtension
   }
 
-  Graphviz.fromString(dot).render(format.gvFormat).toFile(new File(s"$outFile"))
+  renderer(inputs, verbosity, format).toFile(new File(s"$outFile"))
 }
