@@ -53,7 +53,7 @@ case class EnWikipediaClade(val name: String, val path: Option[String], val prio
         val ref =
           if (refs.isEmpty) ""
           else refs.first().attr("href")
-        val text = td.text()
+        val text = Try(td.child(0)).getOrElse(td).text()
         (text, ref)
       }
     }
