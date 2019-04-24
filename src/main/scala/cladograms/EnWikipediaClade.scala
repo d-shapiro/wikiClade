@@ -24,7 +24,11 @@ case class EnWikipediaClade(val name: String, val path: Option[String], val prio
 
   override def DOTDefinition: Option[String] = {
     val cladeTypeStr = if (meta.cladeType.isEmpty) "" else s"""<FONT POINT-SIZE=\"10\">${meta.cladeType}</FONT><br/>"""
-    Some(s""""$name" [label=<$cladeTypeStr<B>$name</B>>]""")
+    val hrefStr = path match {
+      case None => ""
+      case Some(p) => s"""href="$baseUrl$p","""
+    }
+    Some(s""""$name" [$hrefStr label=<$cladeTypeStr<B>$name</B>>]""")
   }
 
   private def getMeta: WikiCladeMetadata = {
