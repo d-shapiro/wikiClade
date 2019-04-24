@@ -24,7 +24,7 @@ object Main extends App {
   }
 
   def getLeafClade(name: String): Clade = {
-    EnWikipediaClade(name, Some("/wiki/" + name.replaceAll(" ", "_")))
+    EnWikipediaClade(name, Some("/wiki/" + name.replaceAll(" ", "_")), 0)
   }
 
   def dotToGraphVizUrl(dot: String): String = {
