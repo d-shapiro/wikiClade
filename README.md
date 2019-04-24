@@ -15,7 +15,7 @@ Inputs should be any number of organisms (or clades of organisms) that can be fo
 
 ### Options
 
-`-v`: An integer from 0 to 100 specifying how verbose to make the output. 100 means show all clades that any of the input organisms belong to, 0 means only show the input organisms, their direct supergroups, and the branching points. Default value is 100.
+`-v`: An integer from 0 to 100 specifying how verbose to make the output. 100 means show all clades that any of the input organisms belong to, 0 means only show the input organisms and the branching points. 20 or above will ensure that all relevant Kingdoms, Phylums, Classes, Orders, Families, Genera, and Species will be included. Default value is 100.
 
 `-f`: Format of the output, one of PNG, SVG, and XDOT. Default is XDOT.
 
