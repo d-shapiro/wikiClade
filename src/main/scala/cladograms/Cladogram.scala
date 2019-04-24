@@ -34,7 +34,7 @@ class Cladogram (val clade: Clade, var children: Set[Cladogram]) {
   def prominentDescendants(verbosity: Int): Set[Cladogram] = for {
     child <- children
     descendant =
-      if (child.children.size == 1 && !child.children.head.clade.shouldDisplay(verbosity))
+      if (child.children.size == 1 && !child.clade.shouldDisplay(verbosity))
         child.prominentDescendants(verbosity).head        //guaranteed to have exactly one element
       else child
   } yield descendant

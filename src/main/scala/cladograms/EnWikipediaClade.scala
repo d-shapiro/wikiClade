@@ -5,22 +5,25 @@ import org.jsoup.nodes.{Document, Element}
 import org.jsoup.select.Elements
 
 import scala.util.{Failure, Success, Try}
-
 /**
   * Created by Daniel on 4/8/2019.
   */
 case class EnWikipediaClade(val name: String, val path: Option[String], val priorityOverride: Double = 100) extends Clade {
   val baseUrl = "https://en.wikipedia.org"
+  val ignorableCladeTypes = Set("Clade", "(unranked)")
+  val importantCladeTypes = Set("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
 
   lazy val meta: WikiCladeMetadata = getMeta
 
   def ancestors: List[Clade] = meta.ancestors
-  def priority: Double = Math.min(priorityOverride, meta.docPriority)
+  def priority: Double = Math.min(
+    Math.min(priorityOverride, meta.docPriority),
+    if (importantCladeTypes contains meta.cladeType) 20 else 100)
 
   override def shouldDisplay(verbosity: Int): Boolean = priority <= verbosity
 
   override def DOTDefinition: Option[String] = {
-    val cladeTypeStr = if (meta.cladeType.isEmpty) "" else meta.cladeType + " <br/>"
+    val cladeTypeStr = if (meta.cladeType.isEmpty) "" else s"""<FONT POINT-SIZE=\"10\">${meta.cladeType}</FONT><br/>"""
     Some(s""""$name" [label=<$cladeTypeStr<B>$name</B>>]""")
   }
 
@@ -37,7 +40,7 @@ case class EnWikipediaClade(val name: String, val path: Option[String], val prio
       else new EnWikipediaClade(details.name, Some(details.path))
     }
     val docPriority = priorityBasedOnDoc(docOpt)
-    WikiCladeMetadata(ancestors, cladeType, docPriority)
+    WikiCladeMetadata(ancestors, sanitizeCladeType(cladeType), docPriority)
   }
 
   private def getDoc: Option[Document] = path match {
@@ -92,15 +95,10 @@ case class EnWikipediaClade(val name: String, val path: Option[String], val prio
             val details = parseRow(row)
             if (details.path.nonEmpty) {
               val pagetry = Try(Jsoup.connect(baseUrl + details.path).get().select("title").text())
-//              val pagetry = doctry match {
-//                case Success(doc) => Try(doc.select("title").text())
-//                case Failure(e) => Failure(e)
-//              }
               pagetry match {
                 case Success(page) => if (knownPages contains page) {
                   iter(i + 1, started, knownPages, TaxonDetails(details.name, details.cladeType, "") :: taxList)
                 } else {
-                  //val pri = priorityBasedOnDoc(doctry.get)
                   iter(i + 1, started, knownPages + page, details :: taxList)
                 }
                 case Failure(_) =>
@@ -114,6 +112,11 @@ case class EnWikipediaClade(val name: String, val path: Option[String], val prio
       }
     }
     iter(0, false, Set(), List())
+  }
+
+  private def sanitizeCladeType(cladeType: String): String = {
+    val cleaned = cladeType.replaceAll(":", "").trim
+    if (ignorableCladeTypes contains cleaned) "" else cleaned
   }
 
   def priorityBasedOnDoc(docOpt: Option[Document]): Double = docOpt match {
