@@ -20,11 +20,15 @@ class Cladogram (val clade: Clade, var children: Set[Cladogram]) {
 
   def partialToDOT(omitLoops: Boolean = true, verbosity: Int = 100): List[String] = {
     val descendants = prominentDescendants(verbosity)
+    val defn = clade.DOTDefinition
     val toplevel = (for {
       child <- descendants
       if !omitLoops || child.clade.name != clade.name
     } yield "\"" + clade.name + "\" -> \"" + child.clade.name + "\";\n").toList
-    toplevel ++ descendants.flatMap(_.partialToDOT(omitLoops, verbosity))
+    defn match {
+      case None => toplevel ++ descendants.flatMap(_.partialToDOT(omitLoops, verbosity))
+      case Some(s) => s :: toplevel ++ descendants.flatMap(_.partialToDOT(omitLoops, verbosity))
+    }
   }
 
   def prominentDescendants(verbosity: Int): Set[Cladogram] = for {

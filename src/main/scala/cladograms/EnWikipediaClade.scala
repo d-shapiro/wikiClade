@@ -19,6 +19,10 @@ case class EnWikipediaClade(val name: String, val path: Option[String], val prio
 
   override def shouldDisplay(verbosity: Int): Boolean = priority <= verbosity
 
+  override def DOTDefinition: Option[String] = {
+    val cladeTypeStr = if (meta.cladeType.isEmpty) "" else meta.cladeType + " <br/>"
+    Some(s""""$name" [label=<$cladeTypeStr<B>$name</B>>]""")
+  }
 
   private def getMeta: WikiCladeMetadata = {
     val docOpt = getDoc
