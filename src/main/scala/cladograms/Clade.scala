@@ -1,7 +1,7 @@
 package cladograms
 
 /**
-  * Created by Daniel on 4/7/2019.
+  * Created by Daniel Shapiro on 4/7/2019.
   */
 trait Clade {
   val name: String

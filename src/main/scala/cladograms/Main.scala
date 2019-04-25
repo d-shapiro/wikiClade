@@ -9,7 +9,7 @@ import guru.nidi.graphviz.engine._
 import scala.util.{Failure, Success, Try}
 
 /**
-  * Created by Daniel on 4/8/2019.
+  * Created by Daniel Shapiro on 4/8/2019.
   */
 object Main extends App {
 

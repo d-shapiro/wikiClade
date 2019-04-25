@@ -1,7 +1,7 @@
 package cladograms
 
 /**
-  * Created by Daniel on 4/7/2019.
+  * Created by Daniel Shapiro on 4/7/2019.
   */
 class Cladogram (val clade: Clade, var children: Set[Cladogram]) {
   def incl(child: Cladogram): Unit =
@@ -77,10 +77,9 @@ object Cladogram {
     def iter(remaining: List[Clade], known: Map[Clade, Cladogram], roots: Set[Cladogram]): Set[Cladogram] = {
       remaining match {
         case List() => roots
-        case head :: tail => {
+        case head :: tail =>
           val (updKnown, updRoots) = expand(new Cladogram(head, Set()), known, roots, List())
           iter(tail, updKnown, updRoots)
-        }
       }
     }
     iter(leaves, Map(), Set())

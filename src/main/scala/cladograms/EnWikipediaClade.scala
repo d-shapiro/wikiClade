@@ -6,12 +6,12 @@ import org.jsoup.select.Elements
 
 import scala.util.{Failure, Success, Try}
 /**
-  * Created by Daniel on 4/8/2019.
+  * Created by Daniel Shapiro on 4/8/2019.
   */
-case class EnWikipediaClade(val name: String, val path: Option[String], val priorityOverride: Double = 100) extends Clade {
+case class EnWikipediaClade(name: String, path: Option[String], priorityOverride: Double = 100) extends Clade {
   val baseUrl = "https://en.wikipedia.org"
-  val ignorableCladeTypes = Set("Clade", "(unranked)")
-  val importantCladeTypes = Set("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+  val ignorableCladeTypes: Set[String] = Set("Clade", "(unranked)")
+  val importantCladeTypes: Set[String] = Set("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
 
   lazy val meta: WikiCladeMetadata = getMeta
 
@@ -40,8 +40,8 @@ case class EnWikipediaClade(val name: String, val path: Option[String], val prio
     val ancestors = for {
       details <- taxonomy
     } yield {
-      if (details.path.isEmpty) new EnWikipediaClade(details.name, None)
-      else new EnWikipediaClade(details.name, Some(details.path))
+      if (details.path.isEmpty) EnWikipediaClade(details.name, None)
+      else EnWikipediaClade(details.name, Some(details.path))
     }
     val docPriority = priorityBasedOnDoc(docOpt)
     WikiCladeMetadata(ancestors, sanitizeCladeType(cladeType), docPriority)
@@ -53,14 +53,13 @@ case class EnWikipediaClade(val name: String, val path: Option[String], val prio
   }
 
   private def getInfoTable(docOpt: Option[Document]): Elements = docOpt match {
-    case Some(doc) => {
+    case Some(doc) =>
       val biotas = doc.getElementsByClass("biota")
       if (biotas.isEmpty) {
         new Elements()
       } else {
         biotas.get(0).select("tr")
       }
-    }
     case None => new Elements()
   }
 
@@ -88,7 +87,7 @@ case class EnWikipediaClade(val name: String, val path: Option[String], val prio
         val ths = row.select("th")
         if (!started) {
           if (!ths.isEmpty && ths.get(0).text().equals("Scientific classification")) {
-            iter(i + 1, true, knownPages, taxList)
+            iter(i + 1, started=true, knownPages, taxList)
           } else {
             iter(i + 1, started, knownPages, taxList)
           }
@@ -115,7 +114,7 @@ case class EnWikipediaClade(val name: String, val path: Option[String], val prio
         }
       }
     }
-    iter(0, false, Set(), List())
+    iter(0, started=false, Set(), List())
   }
 
   private def sanitizeCladeType(cladeType: String): String = {

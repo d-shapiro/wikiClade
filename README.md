@@ -1,6 +1,6 @@
 # wikiClade
 
-Work in progress. Pass in a list of species, get out a cladogram containing them.
+Pass in a list of species, get out a cladogram containing them.
 Taxonomical relationships are scraped from Wikipedia's infoboxes.
 
 Web version hosted here: www.wikiclade.com
