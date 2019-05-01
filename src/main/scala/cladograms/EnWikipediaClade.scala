@@ -86,7 +86,15 @@ case class EnWikipediaClade(name: String, path: Option[String], priorityOverride
         val ths = row.select("th")
         if (!started) {
           if (!ths.isEmpty && ths.get(0).text().equals("Scientific classification")) {
-            iter(i + 1, started=true, knownPages, taxList)
+            val updKnownPages = path match {
+              case Some(pathStr) =>
+                WikiProxy.getTitle(baseUrl + pathStr) match {
+                  case Some(title) => knownPages + title
+                  case None => knownPages
+                }
+              case None => knownPages
+            }
+            iter(i + 1, started=true, updKnownPages, taxList)
           } else {
             iter(i + 1, started, knownPages, taxList)
           }
