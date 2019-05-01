@@ -1,6 +1,5 @@
 package cladograms
 
-import org.jsoup.Jsoup
 import org.jsoup.nodes.{Document, Element}
 import org.jsoup.select.Elements
 
@@ -48,7 +47,7 @@ case class EnWikipediaClade(name: String, path: Option[String], priorityOverride
   }
 
   private def getDoc: Option[Document] = path match {
-    case Some(pathStr) => Some(Jsoup.connect(baseUrl + pathStr).execute().parse())
+    case Some(pathStr) => WikiProxy.fetchPage(baseUrl + pathStr)
     case None => None
   }
 
@@ -69,13 +68,13 @@ case class EnWikipediaClade(name: String, path: Option[String], priorityOverride
       if (tds.isEmpty) TaxonDetails("", "", "")
       else {
         val td = tds.get(tds.size() - 1)
-        val refs = td.select("a")
+        val refs = Try(td.child(0)).getOrElse(td).select("a")
         val ref =
           if (refs.isEmpty) ""
           else refs.first().attr("href")
         val text = Try(td.child(0)).getOrElse(td).text()
         val cladeType = if (tds.size() > 1) tds.get(tds.size() - 2).text() else ""
-        TaxonDetails(text, cladeType, ref)
+        TaxonDetails(text, cladeType, if (ref.startsWith("/")) ref else "")
       }
     }
     def iter(i: Int, started: Boolean, knownPages: Set[String], taxList: List[TaxonDetails]):
@@ -97,14 +96,13 @@ case class EnWikipediaClade(name: String, path: Option[String], priorityOverride
           } else {
             val details = parseRow(row)
             if (details.path.nonEmpty) {
-              val pagetry = Try(Jsoup.connect(baseUrl + details.path).get().select("title").text())
-              pagetry match {
-                case Success(page) => if (knownPages contains page) {
+              WikiProxy.getTitle(baseUrl + details.path) match {
+                case Some(page) => if (knownPages contains page) {
                   iter(i + 1, started, knownPages, TaxonDetails(details.name, details.cladeType, "") :: taxList)
                 } else {
                   iter(i + 1, started, knownPages + page, details :: taxList)
                 }
-                case Failure(_) =>
+                case None =>
                   iter(i + 1, started, knownPages, TaxonDetails(details.name, details.cladeType, "") :: taxList)
               }
             } else {
