@@ -1,3 +1,5 @@
+[![](https://jitpack.io/v/d-shapiro/wikiClade.svg)](https://jitpack.io/#d-shapiro/wikiClade)
+
 # wikiClade
 
 Pass in a list of species, get out a cladogram containing them.
