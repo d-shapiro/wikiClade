@@ -53,7 +53,7 @@ class WikiPageClade(val name: String, path: Option[String], priorityOverride: Do
         val ref =
           if (refs.isEmpty) ""
           else refs.first().attr("href")
-        val text = Try(td.child(0)).getOrElse(td).text()
+        val text = Try(td.select(":not(span)").get(0)).getOrElse(td).text()
         val cladeType = if (tds.size() > 1) tds.get(tds.size() - 2).text() else ""
         TaxonDetails(text, cladeType, if (ref.startsWith("/")) ref else "")
       }
