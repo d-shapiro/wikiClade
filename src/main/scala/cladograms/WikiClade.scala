@@ -24,11 +24,12 @@ object WikiClade {
     val docOpt = WikiProxy.fetchPage(url)
     //TODO Check for paraphyly
     //TODO Check for polyphyly
-    val taxDocOpt = getDoc(getTaxoboxLink(docOpt))
+    val taxPathOpt = getTaxoboxLink(docOpt)
+    val taxDocOpt = getDoc(taxPathOpt)
     val title = getTitle(Some(path))
     val ttitle = getTitle(taxoboxGetPageLink(taxDocOpt))
     if (title == ttitle) {
-      //TODO taxobox clade
+      new WikiTaxoboxClade(name, taxPathOpt)
     } else {
       new WikiPageClade(name, Some(path), 0)
     }
@@ -37,7 +38,7 @@ object WikiClade {
   def newClade(name: String): WikiClade = {
     val taxPath = "/wiki/Template:Taxonomy/" + name.replaceAll(" ", "_")
     getDoc(Some(taxPath)) match {
-      case Some(_) => //TODO taxobox clade
+      case Some(_) => new WikiTaxoboxClade(name, Some(taxPath))
       case None => new WikiPageClade(name, None)
     }
   }
@@ -45,8 +46,8 @@ object WikiClade {
   def newClade(name: String, path: String): WikiClade = {
     val taxPath = path.replaceAll("wiki/", "wiki/Template:Taxonomy/")
     getDoc(Some(taxPath)) match {
-      case Some(_) => //TODO taxobox clade
-      case None => new WikiPageClade(name, None)
+      case Some(_) => new WikiTaxoboxClade(name, Some(taxPath))
+      case None => new WikiPageClade(name, Some(path))
     }
   }
 
@@ -123,6 +124,6 @@ object WikiClade {
     iter(0)
   }
 
-
-
+  case class TaxonDetails(name: String, cladeType: String, isPrincipal: Boolean,
+                          path: String, taxonomyPath: String)
 }

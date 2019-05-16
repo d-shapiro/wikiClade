@@ -1,5 +1,6 @@
 package cladograms
 
+import cladograms.WikiClade.TaxonDetails
 import org.jsoup.nodes.{Document, Element}
 import org.jsoup.select.Elements
 
@@ -46,7 +47,7 @@ class WikiPageClade(val name: String, path: Option[String], priorityOverride: Do
   private def extractTaxonomy(elems: Elements): List[TaxonDetails] = {
     def parseRow(row: Element): TaxonDetails = {
       val tds = row.select("td")
-      if (tds.isEmpty) TaxonDetails("", "", "")
+      if (tds.isEmpty) taxonDetails("", "", "")
       else {
         val td = tds.get(tds.size() - 1)
         val refs = Try(td.child(0)).getOrElse(td).select("a")
@@ -55,7 +56,7 @@ class WikiPageClade(val name: String, path: Option[String], priorityOverride: Do
           else refs.first().attr("href")
         val text = Try(td.select(":not(span)").get(0)).getOrElse(td).text()
         val cladeType = if (tds.size() > 1) tds.get(tds.size() - 2).text() else ""
-        TaxonDetails(text, cladeType, if (ref.startsWith("/")) ref else "")
+        taxonDetails(text, cladeType, if (ref.startsWith("/")) ref else "")
       }
     }
     def iter(i: Int, started: Boolean, knownPages: Set[String], taxList: List[TaxonDetails]):
@@ -87,12 +88,12 @@ class WikiPageClade(val name: String, path: Option[String], priorityOverride: Do
             if (details.path.nonEmpty) {
               WikiProxy.getTitle(WikiClade.baseUrl + details.path) match {
                 case Some(page) => if (knownPages contains page) {
-                  iter(i + 1, started, knownPages, TaxonDetails(details.name, details.cladeType, "") :: taxList)
+                  iter(i + 1, started, knownPages, taxonDetails(details.name, details.cladeType, "") :: taxList)
                 } else {
                   iter(i + 1, started, knownPages + page, details :: taxList)
                 }
                 case None =>
-                  iter(i + 1, started, knownPages, TaxonDetails(details.name, details.cladeType, "") :: taxList)
+                  iter(i + 1, started, knownPages, taxonDetails(details.name, details.cladeType, "") :: taxList)
               }
             } else {
               iter(i + 1, started, knownPages, details :: taxList)
@@ -122,6 +123,8 @@ class WikiPageClade(val name: String, path: Option[String], priorityOverride: Do
 
   override def hashCode(): Int = name.hashCode
 
-  case class TaxonDetails(name: String, cladeType: String, path: String)
+  private def taxonDetails(name: String, cladeType: String, path: String): TaxonDetails = {
+    TaxonDetails(name, cladeType, false, path, "")
+  }
 
 }
