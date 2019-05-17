@@ -13,7 +13,7 @@ abstract class WikiClade extends Clade {
 
   def getMeta: WikiCladeMetadata
 
-  case class WikiCladeMetadata(ancestors: List[Clade], cladeType: String, docPriority: Double)
+  case class WikiCladeMetadata(ancestors: List[Clade], path: Option[String], cladeType: String, docPriority: Double)
 }
 
 object WikiClade {

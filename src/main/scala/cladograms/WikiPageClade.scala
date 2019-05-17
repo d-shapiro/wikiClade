@@ -41,7 +41,7 @@ class WikiPageClade(val name: String, path: Option[String], priorityOverride: Do
       else WikiClade.newClade(details.name, details.path)
     }
     val docPriority = priorityBasedOnDoc(docOpt)
-    WikiCladeMetadata(ancestors, sanitizeCladeType(cladeType), docPriority)
+    WikiCladeMetadata(ancestors, path, sanitizeCladeType(cladeType), docPriority)
   }
 
   private def extractTaxonomy(elems: Elements): List[TaxonDetails] = {

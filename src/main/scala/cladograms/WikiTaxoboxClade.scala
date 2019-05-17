@@ -9,6 +9,19 @@ import scala.util.Try
 class WikiTaxoboxClade(val name: String, taxonomyPath: Option[String], details: Option[TaxonDetails] = None,
                        priorityOverride: Double = 100) extends WikiClade {
 
+  def priority: Double = Math.min(priorityOverride, meta.docPriority)
+
+  override def shouldDisplay(verbosity: Int): Boolean = priority <= verbosity
+
+  override def DOTDefinition: Option[String] = {
+    val cladeTypeStr = if (meta.cladeType.isEmpty) "" else s"""<FONT POINT-SIZE=\"10\">${meta.cladeType}</FONT><br/>"""
+    val hrefStr = meta.path match {
+      case None => ""
+      case Some(p) => s"""href="$WikiClade.baseUrl$p","""
+    }
+    Some(s""""$name" [$hrefStr label=<$cladeTypeStr<B>$name</B>>]""")
+  }
+
   override def getMeta: WikiCladeMetadata = details match {
     case None =>
       val docOpt = WikiClade.getDoc(taxonomyPath)
@@ -32,8 +45,8 @@ class WikiTaxoboxClade(val name: String, taxonomyPath: Option[String], details: 
           List(new WikiTaxoboxClade(highestDetails.name, Some(highestDetails.taxonomyPath.replaceAll("/skip", ""))))
       })
 
-      WikiCladeMetadata(ancestors, mydetails.cladeType, ???)
-    case Some(mydetails) => WikiCladeMetadata(List(), mydetails.cladeType, ???)
+      WikiCladeMetadata(ancestors, Some(mydetails.path), mydetails.cladeType, if (mydetails.isPrincipal) 20 else 80)
+    case Some(mydetails) => WikiCladeMetadata(List(), Some(mydetails.path), mydetails.cladeType, if (mydetails.isPrincipal) 20 else 80)
   }
 
   private def extractTaxonomy(elems: Elements): List[TaxonDetails] = {
