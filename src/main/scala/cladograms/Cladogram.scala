@@ -67,10 +67,19 @@ object Cladogram {
         lineage.clade.ancestors match {
           case List() => ancestryHints match {
             case List() => (newKnown, roots + lineage)
-            case parent :: grandparents => expand(new Cladogram(parent, Set(lineage)), newKnown, roots, grandparents)
+            case parent :: grandparents =>
+              expand(new Cladogram(checkAndGetIfLeaf(parent), Set(lineage)), newKnown, roots, grandparents)
           }
-          case parent :: grandparents => expand(new Cladogram(parent, Set(lineage)), newKnown, roots, grandparents)
+          case parent :: grandparents =>
+            expand(new Cladogram(checkAndGetIfLeaf(parent), Set(lineage)), newKnown, roots, grandparents)
         }
+      }
+    }
+
+    def checkAndGetIfLeaf(clade: Clade): Clade = {
+      leaves.find(_ == clade) match {
+        case None => clade
+        case Some(leaf) => leaf
       }
     }
 

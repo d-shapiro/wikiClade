@@ -97,11 +97,11 @@ class WikiPageClade(val name: String, path: Option[String], val priorityOverride
 
   def canEqual(obj: Any): Boolean = obj.isInstanceOf[WikiPageClade]
   override def equals(obj: Any): Boolean = obj match {
-    case obj: WikiPageClade => obj.canEqual(this) && this.name == obj.name //TODO is this sufficient?
+    case obj: WikiPageClade => obj.canEqual(this) && this.meta.trueName == obj.meta.trueName
     case _ => false
   }
 
-  override def hashCode(): Int = name.hashCode
+  override def hashCode(): Int = meta.trueName.hashCode
 
   private def taxonDetails(name: String, cladeType: String, path: String): TaxonDetails = {
     TaxonDetails(name, cladeType, false, path, "")

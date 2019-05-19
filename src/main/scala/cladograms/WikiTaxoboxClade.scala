@@ -72,9 +72,9 @@ class WikiTaxoboxClade(val name: String, taxonomyPath: Option[String], details: 
 
   def canEqual(obj: Any): Boolean = obj.isInstanceOf[WikiTaxoboxClade]
   override def equals(obj: Any): Boolean = obj match {
-    case obj: WikiTaxoboxClade => obj.canEqual(this) && this.name == obj.name //TODO is this sufficient?
+    case obj: WikiTaxoboxClade => obj.canEqual(this) && this.meta.trueName == obj.meta.trueName
     case _ => false
   }
 
-  override def hashCode(): Int = name.hashCode
+  override def hashCode(): Int = meta.trueName.hashCode
 }
