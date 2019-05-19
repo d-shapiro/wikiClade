@@ -1,26 +1,14 @@
 package cladograms
 
 import cladograms.WikiClade.TaxonDetails
-import org.jsoup.nodes.{Document, Element}
 import org.jsoup.select.Elements
 
 import scala.util.Try
 
 class WikiTaxoboxClade(val name: String, taxonomyPath: Option[String], details: Option[TaxonDetails] = None,
-                       priorityOverride: Double = 100) extends WikiClade {
-
-  def priority: Double = Math.min(priorityOverride, meta.docPriority)
+                       val priorityOverride: Double = 100) extends WikiClade {
 
   override def shouldDisplay(verbosity: Int): Boolean = priority <= verbosity
-
-  override def DOTDefinition: Option[String] = {
-    val cladeTypeStr = if (meta.cladeType.isEmpty) "" else s"""<FONT POINT-SIZE=\"10\">${meta.cladeType}</FONT><br/>"""
-    val hrefStr = meta.path match {
-      case None => ""
-      case Some(p) => s"""href="$WikiClade.baseUrl$p","""
-    }
-    Some(s""""$name" [$hrefStr label=<$cladeTypeStr<B>$name</B>>]""")
-  }
 
   override def getMeta: WikiCladeMetadata = details match {
     case None =>
@@ -42,11 +30,14 @@ class WikiTaxoboxClade(val name: String, taxonomyPath: Option[String], details: 
       }) ++ (highestAnc match {
         case None => List()
         case Some(highestDetails) =>
-          List(new WikiTaxoboxClade(highestDetails.name, Some(highestDetails.taxonomyPath.replaceAll("/skip", ""))))
+          List(new WikiTaxoboxClade(highestDetails.name,
+            Some(highestDetails.taxonomyPath.replaceAll("/skip", ""))))
       })
 
-      WikiCladeMetadata(ancestors, Some(mydetails.path), mydetails.cladeType, if (mydetails.isPrincipal) 20 else 80)
-    case Some(mydetails) => WikiCladeMetadata(List(), Some(mydetails.path), mydetails.cladeType, if (mydetails.isPrincipal) 20 else 80)
+      WikiCladeMetadata(mydetails.name, ancestors, Some(mydetails.path),
+        WikiClade.sanitizeCladeType(mydetails.cladeType), if (mydetails.isPrincipal) 30 else 80)
+    case Some(mydetails) => WikiCladeMetadata(mydetails.name, List(), Some(mydetails.path),
+      WikiClade.sanitizeCladeType(mydetails.cladeType), if (mydetails.isPrincipal) 30 else 80)
   }
 
   private def extractTaxonomy(elems: Elements): List[TaxonDetails] = {
@@ -78,4 +69,12 @@ class WikiTaxoboxClade(val name: String, taxonomyPath: Option[String], details: 
     }
     iter(elems.size() - 1, List())
   }
+
+  def canEqual(obj: Any): Boolean = obj.isInstanceOf[WikiTaxoboxClade]
+  override def equals(obj: Any): Boolean = obj match {
+    case obj: WikiTaxoboxClade => obj.canEqual(this) && this.name == obj.name //TODO is this sufficient?
+    case _ => false
+  }
+
+  override def hashCode(): Int = name.hashCode
 }

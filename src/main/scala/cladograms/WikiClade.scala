@@ -13,11 +13,32 @@ abstract class WikiClade extends Clade {
 
   def getMeta: WikiCladeMetadata
 
-  case class WikiCladeMetadata(ancestors: List[Clade], path: Option[String], cladeType: String, docPriority: Double)
+  def priorityOverride: Double
+
+  case class WikiCladeMetadata(trueName: String, ancestors: List[Clade], path: Option[String], cladeType: String, docPriority: Double)
+
+  override def DOTDefinition: Option[String] = {
+    val cladeTypeStr = if (meta.cladeType.isEmpty) "" else s"""<FONT POINT-SIZE=\"10\">${meta.cladeType}</FONT><br/>"""
+    val hrefStr = meta.path match {
+      case None => ""
+      case Some(p) => s"""href="$WikiClade.baseUrl$p","""
+    }
+    val dispname =
+      if (meta.trueName == name) name
+      else s"${meta.trueName}<br/>($name)"
+    Some(s""""$name" [$hrefStr label=<$cladeTypeStr<B>$dispname</B>>]""")
+  }
+
+  def priority: Double = Math.min(
+    Math.min(priorityOverride, meta.docPriority),
+    if (WikiClade.importantCladeTypes contains meta.cladeType) 20 else 100)
 }
 
 object WikiClade {
   val baseUrl = "https://en.wikipedia.org"
+  val ignorableCladeTypes: Set[String] = Set("Clade", "(unranked)")
+  val importantCladeTypes: Set[String] = Set("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
+
   def newInputClade(name: String): WikiClade = {
     val path = "/wiki/" + name.replaceAll(" ", "_")
     val url = baseUrl + path
@@ -28,10 +49,11 @@ object WikiClade {
     val taxDocOpt = getDoc(taxPathOpt)
     val title = getTitle(Some(path))
     val ttitle = getTitle(taxoboxGetPageLink(taxDocOpt))
-    if (title == ttitle) {
-      new WikiTaxoboxClade(name, taxPathOpt)
-    } else {
-      new WikiPageClade(name, Some(path), 0)
+    title match {
+      case None => new WikiPageClade(name, taxPathOpt, 0)
+      case Some(_) =>
+        if (title == ttitle) new WikiTaxoboxClade(name, taxPathOpt)
+        else new WikiPageClade(name, Some(path), 0)
     }
   }
 
@@ -100,6 +122,7 @@ object WikiClade {
       val wikitables = doc.getElementsByClass("wikitable")
       if (wikitables.isEmpty) new Elements()
       else wikitables.get(0).select("tr")
+    case None => new Elements()
   }
 
   private def taxoboxGetPageLink(taxDocOpt: Option[Document]): Option[String] = {
@@ -122,6 +145,11 @@ object WikiClade {
       }
     }
     iter(0)
+  }
+
+  def sanitizeCladeType(cladeType: String): String = {
+    val cleaned = cladeType.replaceAll(":", "").trim
+    if (ignorableCladeTypes contains cleaned) "" else cleaned
   }
 
   case class TaxonDetails(name: String, cladeType: String, isPrincipal: Boolean,

@@ -9,30 +9,15 @@ import scala.util.Try
 /**
   * Created by Daniel on 5/11/2019.
   */
-class WikiPageClade(val name: String, path: Option[String], priorityOverride: Double = 100) extends WikiClade {
-  val ignorableCladeTypes: Set[String] = Set("Clade", "(unranked)")
-  val importantCladeTypes: Set[String] = Set("Kingdom", "Phylum", "Class", "Order", "Family", "Genus", "Species")
-
-  def priority: Double = Math.min(
-    Math.min(priorityOverride, meta.docPriority),
-    if (importantCladeTypes contains meta.cladeType) 20 else 100)
+class WikiPageClade(val name: String, path: Option[String], val priorityOverride: Double = 100) extends WikiClade {
 
   override def shouldDisplay(verbosity: Int): Boolean = priority <= verbosity
 
-  override def DOTDefinition: Option[String] = {
-    val cladeTypeStr = if (meta.cladeType.isEmpty) "" else s"""<FONT POINT-SIZE=\"10\">${meta.cladeType}</FONT><br/>"""
-    val hrefStr = path match {
-      case None => ""
-      case Some(p) => s"""href="$WikiClade.baseUrl$p","""
-    }
-    Some(s""""$name" [$hrefStr label=<$cladeTypeStr<B>$name</B>>]""")
-  }
-
   override def getMeta: WikiCladeMetadata = {
     val docOpt = WikiClade.getDoc(path)
-    val (taxonomy, cladeType) = extractTaxonomy(WikiClade.getInfoTable(docOpt)) match {
+    val (taxonomy, mydetails: TaxonDetails) = extractTaxonomy(WikiClade.getInfoTable(docOpt)) match {
       case Nil => (Nil, "")
-      case head :: tail => (tail, head.cladeType)
+      case head :: tail => (tail, head)
     }
     val ancestors = for {
       details <- taxonomy
@@ -41,7 +26,7 @@ class WikiPageClade(val name: String, path: Option[String], priorityOverride: Do
       else WikiClade.newClade(details.name, details.path)
     }
     val docPriority = priorityBasedOnDoc(docOpt)
-    WikiCladeMetadata(ancestors, path, sanitizeCladeType(cladeType), docPriority)
+    WikiCladeMetadata(mydetails.name ,ancestors, path, WikiClade.sanitizeCladeType(mydetails.cladeType), docPriority)
   }
 
   private def extractTaxonomy(elems: Elements): List[TaxonDetails] = {
@@ -54,7 +39,7 @@ class WikiPageClade(val name: String, path: Option[String], priorityOverride: Do
         val ref =
           if (refs.isEmpty) ""
           else refs.first().attr("href")
-        val text = Try(td.select(":not(span)").get(0)).getOrElse(td).text()
+        val text = Try(td.select(":not(span)").get(0)).getOrElse(td).text().replaceAll("\\[[0-9]*\\]", "")
         val cladeType = if (tds.size() > 1) tds.get(tds.size() - 2).text() else ""
         taxonDetails(text, cladeType, if (ref.startsWith("/")) ref else "")
       }
@@ -103,11 +88,6 @@ class WikiPageClade(val name: String, path: Option[String], priorityOverride: Do
       }
     }
     iter(0, started=false, Set(), List())
-  }
-
-  private def sanitizeCladeType(cladeType: String): String = {
-    val cleaned = cladeType.replaceAll(":", "").trim
-    if (ignorableCladeTypes contains cleaned) "" else cleaned
   }
 
   def priorityBasedOnDoc(docOpt: Option[Document]): Double = docOpt match {
