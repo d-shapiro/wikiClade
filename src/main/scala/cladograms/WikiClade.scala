@@ -21,7 +21,7 @@ abstract class WikiClade extends Clade {
     val cladeTypeStr = if (meta.cladeType.isEmpty) "" else s"""<FONT POINT-SIZE=\"10\">${meta.cladeType}</FONT><br/>"""
     val hrefStr = meta.path match {
       case None => ""
-      case Some(p) => s"""href="$WikiClade.baseUrl$p","""
+      case Some(p) => s"""href="${WikiClade.baseUrl}${p.replaceAll("&", "&amp;")}","""
     }
     val dispname =
       if (meta.trueName == name) name
@@ -52,7 +52,7 @@ object WikiClade {
     title match {
       case None => new WikiPageClade(name, taxPathOpt, 0)
       case Some(_) =>
-        if (title == ttitle) new WikiTaxoboxClade(name, taxPathOpt)
+        if (title == ttitle) new WikiTaxoboxClade(name, taxPathOpt, priorityOverride = 0)
         else new WikiPageClade(name, Some(path), 0)
     }
   }
