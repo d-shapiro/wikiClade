@@ -32,12 +32,16 @@ object Main extends App {
       URLEncoder.encode(dot, StandardCharsets.UTF_8.toString).replaceAll("\\+", " ")
   }
 
-  def parseVerbosity(verbosityStr: String): Int = {
-    if (verbosityStr.startsWith("m")) 0
-    else if (verbosityStr.startsWith("l")) 20
-    else if (verbosityStr.startsWith("n")) 30
-    else if (verbosityStr.startsWith("c")) 100
-    else Try(verbosityStr.toInt).getOrElse(30)
+  def parseVerbosity(verbosityStr: Option[String]): Int = {
+    verbosityStr match {
+      case Some(str) =>
+        if (str.startsWith ("m") ) 0
+        else if (str.startsWith ("l") ) 20
+        else if (str.startsWith ("n") ) 30
+        else if (str.startsWith ("c") ) 100
+        else Try (str.toInt).getOrElse (30)
+      case None => 30
+    }
   }
 
   def parseArgs: (List[String], Map[String, String]) = {
@@ -66,18 +70,15 @@ object Main extends App {
     Graphviz.fromString(dot).render(format.gvFormat)
   }
 
-  def svg(inputs: List[String], verbosity: Option[Int]): String = {
-    renderer(inputs, verbosity, OutFormat.SVG).toString
+  def svg(inputs: List[String], verbosity: Option[String]): String = {
+    renderer(inputs, Some(parseVerbosity(verbosity)), OutFormat.SVG).toString
   }
 
   val params = Set("-v", "-o", "-f")
   val flags = Set()
 
   val (inputs, configs) = parseArgs
-  val verbosity = configs.get("-v") match {
-    case None => 30
-    case Some(s) => parseVerbosity(s)
-  }
+  val verbosity = parseVerbosity(configs.get("-v"))
 
   val format = configs.get("-f") match {
     case None => OutFormat.DOT
