@@ -24,12 +24,20 @@ object Main extends App {
   }
 
   def getLeafClade(name: String): Clade = {
-    EnWikipediaClade(name, Some("/wiki/" + name.replaceAll(" ", "_")), 0)
+    WikiClade.newInputClade(name)
   }
 
   def dotToGraphVizUrl(dot: String): String = {
     "https://dreampuf.github.io/GraphvizOnline/#" +
       URLEncoder.encode(dot, StandardCharsets.UTF_8.toString).replaceAll("\\+", " ")
+  }
+
+  def parseVerbosity(verbosityStr: String): Int = {
+    if (verbosityStr.startsWith("m")) 0
+    else if (verbosityStr.startsWith("l")) 20
+    else if (verbosityStr.startsWith("n")) 30
+    else if (verbosityStr.startsWith("c")) 100
+    else Try(verbosityStr.toInt).getOrElse(30)
   }
 
   def parseArgs: (List[String], Map[String, String]) = {
@@ -67,8 +75,8 @@ object Main extends App {
 
   val (inputs, configs) = parseArgs
   val verbosity = configs.get("-v") match {
-    case None => None
-    case Some(s) => Try(s.toInt).toOption
+    case None => 30
+    case Some(s) => parseVerbosity(s)
   }
 
   val format = configs.get("-f") match {
@@ -84,5 +92,5 @@ object Main extends App {
     case Some(s) => if (s.endsWith(format.fileExtension)) s else s + format.fileExtension
   }
 
-  renderer(inputs, verbosity, format).toFile(new File(s"$outFile"))
+  renderer(inputs, Some(verbosity), format).toFile(new File(s"$outFile"))
 }
