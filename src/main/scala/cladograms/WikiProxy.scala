@@ -8,24 +8,14 @@ import scala.util.Try
 
 object WikiProxy {
 
-  private val pageTitles: mutable.Map[String, String] = mutable.Map()
-  private val docCache: mutable.Map[String, Document] = mutable.Map()
-  //TODO allow multiple uses of docCache
+  private val pageTitles: mutable.Map[String, Option[String]] = mutable.Map()
 
   private def getDoc(url: String): Option[Document] = {
-    if (docCache contains url) {
-      docCache remove url
-    } else {
-      //println(s"fetching $url")
       Try(Jsoup.connect(url).execute().parse()).toOption
-    }
   }
 
   private def storeTitle(url: String, doc: Document): Unit = {
-    Try(doc.select("title").text()).toOption match {
-      case Some(title) => pageTitles(url) = title
-      case None => ()
-    }
+    pageTitles(url) = Try(doc.select("title").text()).toOption
   }
 
 
@@ -34,7 +24,9 @@ object WikiProxy {
       case Some(doc) =>
         if (!(pageTitles contains url)) storeTitle(url, doc)
         Some(doc)
-      case None => None
+      case None =>
+        pageTitles(url) = None
+        None
     }
   }
 
@@ -42,12 +34,12 @@ object WikiProxy {
     if (!(pageTitles contains url)) {
       getDoc(url) match {
         case Some(doc) =>
-          docCache(url) = doc
           storeTitle(url, doc)
-        case None => ()
+        case None =>
+          pageTitles(url) = None
       }
     }
-    pageTitles.get(url)
+    pageTitles(url)
   }
 
 }

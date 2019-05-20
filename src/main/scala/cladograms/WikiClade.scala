@@ -57,19 +57,11 @@ object WikiClade {
     }
   }
 
-  def newClade(name: String): WikiClade = {
+  def newClade(name: String, path: Option[String]): WikiClade = {
     val taxPath = "/wiki/Template:Taxonomy/" + name.replaceAll(" ", "_")
-    getDoc(Some(taxPath)) match {
+    getTitle(Some(taxPath)) match {
       case Some(_) => new WikiTaxoboxClade(name, Some(taxPath))
-      case None => new WikiPageClade(name, None)
-    }
-  }
-
-  def newClade(name: String, path: String): WikiClade = {
-    val taxPath = path.replaceAll("wiki/", "wiki/Template:Taxonomy/")
-    getDoc(Some(taxPath)) match {
-      case Some(_) => new WikiTaxoboxClade(name, Some(taxPath))
-      case None => new WikiPageClade(name, Some(path))
+      case None => new WikiPageClade(name, path)
     }
   }
 

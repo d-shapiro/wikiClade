@@ -15,15 +15,15 @@ class WikiPageClade(val name: String, path: Option[String], val priorityOverride
 
   override def getMeta: WikiCladeMetadata = {
     val docOpt = WikiClade.getDoc(path)
-    val (taxonomy, mydetails: TaxonDetails) = extractTaxonomy(WikiClade.getInfoTable(docOpt)) match {
-      case Nil => (Nil, "")
+    val (taxonomy, mydetails) = extractTaxonomy(WikiClade.getInfoTable(docOpt)) match {
+      case Nil => (Nil, taxonDetails(name, "", ""))
       case head :: tail => (tail, head)
     }
     val ancestors = for {
       details <- taxonomy
     } yield {
-      if (details.path.isEmpty) WikiClade.newClade(details.name)
-      else WikiClade.newClade(details.name, details.path)
+      if (details.path.isEmpty) WikiClade.newClade(details.name, None)
+      else WikiClade.newClade(details.name, Some(details.path))
     }
     val docPriority = priorityBasedOnDoc(docOpt)
     WikiCladeMetadata(mydetails.name ,ancestors, path, WikiClade.sanitizeCladeType(mydetails.cladeType), docPriority)
