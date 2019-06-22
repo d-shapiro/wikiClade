@@ -26,7 +26,8 @@ class WikiPageClade(val name: String, path: Option[String], val priorityOverride
       else WikiClade.newClade(details.name, Some(details.path))
     }
     val docPriority = priorityBasedOnDoc(docOpt)
-    WikiCladeMetadata(mydetails.name ,ancestors, path, WikiClade.sanitizeCladeType(mydetails.cladeType), docPriority)
+    WikiCladeMetadata(mydetails.name ,ancestors, path, WikiClade.sanitizeCladeType(mydetails.cladeType), docPriority,
+      mydetails.path.nonEmpty && !mydetails.cladeType.contains("pecies"))
   }
 
   private def extractTaxonomy(elems: Elements): List[TaxonDetails] = {
@@ -94,14 +95,6 @@ class WikiPageClade(val name: String, path: Option[String], val priorityOverride
     case Some(doc) => Math.min (99, Math.max (1, 100 - (15 * (Math.log (doc.text ().length) - 7) ) ) )
     case None => 99
   }
-
-  def canEqual(obj: Any): Boolean = obj.isInstanceOf[WikiPageClade]
-  override def equals(obj: Any): Boolean = obj match {
-    case obj: WikiPageClade => obj.canEqual(this) && this.meta.trueName == obj.meta.trueName
-    case _ => false
-  }
-
-  override def hashCode(): Int = meta.trueName.hashCode
 
   private def taxonDetails(name: String, cladeType: String, path: String): TaxonDetails = {
     TaxonDetails(name, cladeType, false, path, "")

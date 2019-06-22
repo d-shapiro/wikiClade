@@ -69,12 +69,4 @@ class WikiTaxoboxClade(val name: String, taxonomyPath: Option[String], details: 
     }
     iter(elems.size() - 1, List())
   }
-
-  def canEqual(obj: Any): Boolean = obj.isInstanceOf[WikiTaxoboxClade]
-  override def equals(obj: Any): Boolean = obj match {
-    case obj: WikiTaxoboxClade => obj.canEqual(this) && this.meta.trueName == obj.meta.trueName
-    case _ => false
-  }
-
-  override def hashCode(): Int = meta.trueName.hashCode
 }

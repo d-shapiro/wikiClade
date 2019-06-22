@@ -15,7 +15,8 @@ abstract class WikiClade extends Clade {
 
   def priorityOverride: Double
 
-  case class WikiCladeMetadata(trueName: String, ancestors: List[Clade], path: Option[String], cladeType: String, docPriority: Double)
+  case class WikiCladeMetadata(trueName: String, ancestors: List[Clade], path: Option[String], cladeType: String,
+                               docPriority: Double, paraphyletic: Boolean = false)
 
   override def DOTDefinition: Option[String] = {
     val cladeTypeStr = if (meta.cladeType.isEmpty) "" else s"""<FONT POINT-SIZE=\"10\">${meta.cladeType}</FONT><br/>"""
@@ -23,15 +24,24 @@ abstract class WikiClade extends Clade {
       case None => ""
       case Some(p) => s"""href="${WikiClade.baseUrl}${p.replaceAll("&", "&amp;")}","""
     }
+    val asterisk = if (meta.paraphyletic) "*" else ""
     val dispname =
       if (meta.trueName == name) name
-      else s"${meta.trueName}<br/>($name)"
+      else s"${meta.trueName}<br/>($name)$asterisk"
     Some(s""""$name" [$hrefStr label=<$cladeTypeStr<B>$dispname</B>>]""")
   }
 
   def priority: Double = Math.min(
     Math.min(priorityOverride, meta.docPriority),
     if (WikiClade.importantCladeTypes contains meta.cladeType) 20 else 100)
+
+  def canEqual(obj: Any): Boolean = obj.isInstanceOf[WikiClade]
+  override def equals(obj: Any): Boolean = obj match {
+    case obj: WikiClade => obj.canEqual(this) && this.meta.trueName == obj.meta.trueName
+    case _ => false
+  }
+
+  override def hashCode(): Int = meta.trueName.hashCode
 }
 
 object WikiClade {
