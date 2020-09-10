@@ -53,16 +53,15 @@ object WikiClade {
     val path = "/wiki/" + name.replaceAll(" ", "_")
     val url = baseUrl + path
     val docOpt = WikiProxy.fetchPage(url)
-    //TODO Check for paraphyly
-    //TODO Check for polyphyly
-    val taxPathOpt = getTaxoboxLink(docOpt)
-    val taxDocOpt = getDoc(taxPathOpt)
     val title = getTitle(Some(path))
+    val isBadger = title.contains("Badger - Wikipedia")   // yes, I'm hard-coding badgers. I blame Wikipedia.
+    val taxPathOpt = getTaxoboxLink(if (isBadger) "Melinae" else name, docOpt)
+    val taxDocOpt = getDoc(taxPathOpt)
     val ttitle = getTitle(taxoboxGetPageLink(taxDocOpt))
     title match {
       case None => new WikiPageClade(name, taxPathOpt, 0)
       case Some(_) =>
-        if (title == ttitle) new WikiTaxoboxClade(name, taxPathOpt, priorityOverride = 0)
+        if (title == ttitle || isBadger) new WikiTaxoboxClade(name, taxPathOpt, priorityOverride = 0)
         else new WikiPageClade(name, Some(path), 0)
     }
   }
@@ -96,7 +95,15 @@ object WikiClade {
     case None => new Elements()
   }
 
-  private def getTaxoboxLink(docOpt: Option[Document]): Option[String] = {
+  private def getTaxoboxLink(name: String, docOpt: Option[Document]): Option[String] = {
+    val possibleTaxPath = "/wiki/Template:Taxonomy/" + name.replaceAll(" ", "_")
+    getTitle(Some(possibleTaxPath)) match {
+      case Some(_) => Some(possibleTaxPath)
+      case None => getTaxoboxLinkFromEditButton(docOpt)
+    }
+  }
+
+  private def getTaxoboxLinkFromEditButton(docOpt: Option[Document]): Option[String] = {
     val elements = getInfoTable(docOpt)
     def iter(i: Int): Option[String] = {
       def iter2(as: Elements, j: Int): Option[String] = {
