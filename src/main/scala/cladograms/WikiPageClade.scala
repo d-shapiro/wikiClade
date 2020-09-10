@@ -36,11 +36,16 @@ class WikiPageClade(val name: String, path: Option[String], val priorityOverride
       if (tds.isEmpty) taxonDetails("", "", "")
       else {
         val td = tds.get(tds.size() - 1)
-        val refs = Try(td.child(0)).getOrElse(td).select("a")
+        val brs = td.select("br")
+        val tdline =
+          if (brs.isEmpty) td
+          else brs.get(0).previousElementSibling()
+        val refs = tdline.select("a")
         val ref =
           if (refs.isEmpty) ""
           else refs.first().attr("href")
-        val text = Try(td.select(":not(span)").get(0)).getOrElse(td).text().replaceAll("\\[[0-9]*\\]", "")
+        val text = Try(tdline.select(":not(span)").get(0)).getOrElse(tdline).text()
+          .replaceAll("\\[[0-9]*\\]", "").replaceAll("†", "")
         val cladeType = if (tds.size() > 1) tds.get(tds.size() - 2).text() else ""
         taxonDetails(text, cladeType, if (ref.startsWith("/")) ref else "")
       }
@@ -97,7 +102,7 @@ class WikiPageClade(val name: String, path: Option[String], val priorityOverride
   }
 
   private def taxonDetails(name: String, cladeType: String, path: String): TaxonDetails = {
-    TaxonDetails(name, cladeType, false, path, "")
+    TaxonDetails(name, cladeType, isPrincipal=false, path, "")
   }
 
 }
